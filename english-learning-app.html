@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>SpeakUp — Belajar Inggris</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e1a; --surface: #111827; --card: #1a2235;
+    --accent: #00d4ff; --accent2: #7c3aed; --accent3: #10b981;
+    --warn: #f59e0b; --danger: #ef4444; --text: #f0f4ff;
+    --muted: #6b7a9a; --border: rgba(255,255,255,0.07);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: 'Sora', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
+  body::before {
+    content: ''; position: fixed; inset: 0;
+    background: radial-gradient(ellipse 80% 60% at 20% 10%, rgba(0,212,255,0.06) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 50% at 80% 90%, rgba(124,58,237,0.07) 0%, transparent 60%);
+    pointer-events: none; z-index: 0;
+  }
+  .app { position: relative; z-index: 1; max-width: 480px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
+
+  /* HEADER */
+  .header { padding: 20px 20px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  .logo { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; }
+  .logo span { color: var(--accent); }
+  .streak { display: flex; align-items: center; gap: 6px; background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.2); padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; color: var(--warn); }
+
+  /* SCREENS */
+  .screen { flex: 1; display: none; flex-direction: column; }
+  .screen.active { display: flex; }
+
+  /* HOME */
+  .home-screen { padding: 24px 20px; gap: 20px; overflow-y: auto; }
+  .welcome-text h2 { font-size: 26px; font-weight: 800; line-height: 1.2; }
+  .welcome-text h2 span { color: var(--accent); }
+  .welcome-text p { margin-top: 8px; font-size: 14px; color: var(--muted); line-height: 1.6; }
+  .section-label { font-size: 11px; font-weight: 700; letter-spacing: 1.5px; color: var(--muted); text-transform: uppercase; margin-bottom: 12px; }
+  .theme-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .theme-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 16px; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden; }
+  .theme-card::before { content: ''; position: absolute; inset: 0; opacity: 0; transition: opacity 0.2s; }
+  .theme-card:active { transform: scale(0.96); }
+  .theme-card.selected { border-color: var(--accent); }
+  .theme-card.selected::before { background: rgba(0,212,255,0.05); opacity: 1; }
+  .theme-emoji { font-size: 28px; margin-bottom: 8px; }
+  .theme-name { font-size: 13px; font-weight: 700; }
+  .theme-desc { font-size: 11px; color: var(--muted); margin-top: 2px; line-height: 1.4; }
+  .theme-card.selected .theme-name { color: var(--accent); }
+  .start-btn { background: linear-gradient(135deg, var(--accent) 0%, #0099bb 100%); color: #000; border: none; width: 100%; padding: 18px; border-radius: 16px; font-size: 16px; font-weight: 800; cursor: pointer; transition: all 0.2s; box-shadow: 0 8px 32px rgba(0,212,255,0.25); flex-shrink: 0; }
+  .start-btn:active { transform: scale(0.97); }
+  .start-btn:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
+
+  /* LEARN SCREEN */
+  .learn-screen { overflow: hidden; }
+  .learn-header { padding: 16px 20px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  .back-btn { width: 36px; height: 36px; border-radius: 50%; background: var(--card); border: 1px solid var(--border); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; color: var(--text); transition: all 0.2s; }
+  .back-btn:active { transform: scale(0.9); }
+  .learn-title { flex: 1; }
+  .learn-title h3 { font-size: 15px; font-weight: 700; }
+  .learn-title p { font-size: 12px; color: var(--muted); }
+  .sentence-counter { font-family: 'Space Mono', monospace; font-size: 12px; color: var(--accent); font-weight: 700; background: rgba(0,212,255,0.1); padding: 4px 10px; border-radius: 20px; }
+  .learn-content { flex: 1; padding: 20px; display: flex; flex-direction: column; gap: 14px; overflow-y: auto; }
+
+  /* SENTENCE CARD */
+  .sentence-card { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 20px; position: relative; overflow: hidden; flex-shrink: 0; }
+  .sentence-card::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+  .sentence-type { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 4px 10px; border-radius: 20px; margin-bottom: 12px; }
+  .type-active { background: rgba(16,185,129,0.15); color: var(--accent3); }
+  .type-passive { background: rgba(124,58,237,0.15); color: #a78bfa; }
+  .type-question { background: rgba(245,158,11,0.15); color: var(--warn); }
+  .english-text { font-size: 19px; font-weight: 700; line-height: 1.55; color: var(--text); letter-spacing: -0.2px; }
+  .word-highlight { color: var(--accent); }
+  .translation-box { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+  .translation-label { font-size: 10px; font-weight: 700; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
+  .translation-text { font-size: 14px; color: #cbd5e1; line-height: 1.6; }
+
+  /* AUDIO */
+  .audio-controls { display: flex; gap: 10px; flex-shrink: 0; }
+  .play-btn { flex: 1; background: linear-gradient(135deg, var(--accent), #0099bb); color: #000; border: none; padding: 15px; border-radius: 14px; font-size: 14px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s; box-shadow: 0 6px 20px rgba(0,212,255,0.2); }
+  .play-btn:active { transform: scale(0.96); }
+  .play-btn.playing { background: linear-gradient(135deg, var(--warn), #d97706); box-shadow: 0 6px 20px rgba(245,158,11,0.25); }
+  .replay-btn { width: 52px; height: 52px; border-radius: 14px; background: var(--card); border: 1px solid var(--border); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; transition: all 0.2s; color: var(--text); }
+  .replay-btn:active { transform: scale(0.9); background: rgba(0,212,255,0.1); }
+
+  /* REP COUNTER */
+  .rep-card { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 16px 18px; flex-shrink: 0; }
+  .rep-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .rep-label { font-size: 12px; font-weight: 700; color: var(--muted); }
+  .rep-num { font-family: 'Space Mono', monospace; font-size: 14px; font-weight: 700; color: var(--accent); }
+  .rep-dots { display: flex; gap: 8px; justify-content: center; }
+  .rep-dot {
+    width: 38px; height: 38px; border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.03);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700; color: var(--muted);
+    transition: all 0.35s cubic-bezier(.34,1.56,.64,1);
+  }
+  .rep-dot.done { border-color: var(--accent3); background: rgba(16,185,129,0.18); color: var(--accent3); animation: dot-pop 0.4s cubic-bezier(.34,1.56,.64,1); }
+  .rep-dot.active { border-color: var(--accent); background: rgba(0,212,255,0.12); color: var(--accent); box-shadow: 0 0 12px rgba(0,212,255,0.25); }
+  @keyframes dot-pop { 0%{transform:scale(0.4)} 65%{transform:scale(1.25)} 100%{transform:scale(1)} }
+
+  /* RECORD */
+  .record-section { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 18px; flex-shrink: 0; }
+  .record-instruction { font-size: 13px; color: var(--muted); margin-bottom: 14px; line-height: 1.6; text-align: center; }
+  .record-instruction strong { color: var(--text); }
+  .record-btn { width: 100%; padding: 15px; border-radius: 14px; border: none; cursor: pointer; font-size: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s; }
+  .record-btn.idle { background: rgba(124,58,237,0.15); color: #a78bfa; border: 1.5px solid rgba(124,58,237,0.3); }
+  .record-btn.recording { background: rgba(239,68,68,0.15); color: #fca5a5; border: 1.5px solid rgba(239,68,68,0.4); animation: pulse-rec 1.2s ease infinite; }
+  @keyframes pulse-rec { 0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0.3)} 50%{box-shadow:0 0 0 10px rgba(239,68,68,0)} }
+
+  /* MANUAL FALLBACK */
+  .manual-wrap { display: none; flex-direction: column; gap: 10px; margin-top: 12px; }
+  .manual-wrap.show { display: flex; }
+  .manual-input { width: 100%; background: rgba(0,0,0,0.3); border: 1.5px solid var(--border); color: var(--text); font-family: 'Sora', sans-serif; font-size: 14px; padding: 12px 14px; border-radius: 12px; outline: none; resize: none; transition: border-color 0.2s; line-height: 1.5; }
+  .manual-input:focus { border-color: var(--accent); }
+  .manual-input::placeholder { color: var(--muted); }
+  .manual-submit-btn { width: 100%; padding: 13px; border-radius: 12px; border: 1.5px solid rgba(124,58,237,0.3); background: rgba(124,58,237,0.18); color: #a78bfa; font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+  .manual-submit-btn:active { transform: scale(0.97); }
+
+  .mic-notice { display: none; margin-top: 12px; background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2); border-radius: 12px; padding: 13px; }
+  .mic-notice.show { display: block; }
+  .mic-notice p { font-size: 12px; color: #fcd34d; line-height: 1.65; }
+
+  /* RESULT */
+  .result-box { margin-top: 12px; padding: 12px; background: rgba(0,0,0,0.25); border-radius: 10px; display: none; }
+  .result-box.show { display: block; }
+  .result-text { font-size: 13px; line-height: 1.9; color: #cbd5e1; }
+  .result-text .correct { color: var(--accent3); font-weight: 700; }
+  .result-text .wrong { color: var(--danger); font-weight: 700; text-decoration: underline wavy; }
+  .score-bar { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+  .score-label { font-size: 12px; color: var(--muted); white-space: nowrap; font-family: 'Space Mono', monospace; font-weight: 700; }
+  .score-track { flex: 1; height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden; }
+  .score-fill { height: 100%; border-radius: 3px; transition: width 0.6s cubic-bezier(.34,1.56,.64,1); }
+
+  /* NEXT BTN */
+  .next-btn { width: 100%; padding: 16px; border-radius: 14px; border: none; flex-shrink: 0; background: linear-gradient(135deg, var(--accent3), #059669); color: #fff; font-size: 15px; font-weight: 800; cursor: pointer; display: none; align-items: center; justify-content: center; gap: 8px; transition: transform 0.2s; box-shadow: 0 6px 20px rgba(16,185,129,0.3); }
+  .next-btn.enabled { display: flex; animation: pop-in 0.4s cubic-bezier(.34,1.56,.64,1) forwards; }
+  @keyframes pop-in { from{transform:scale(0.8);opacity:0} to{transform:scale(1);opacity:1} }
+  .next-btn:active { transform: scale(0.97); }
+
+  /* LOADING */
+  .loading-overlay { position: fixed; inset: 0; background: rgba(10,14,26,0.9); display: none; flex-direction: column; align-items: center; justify-content: center; gap: 16px; z-index: 100; }
+  .loading-overlay.show { display: flex; }
+  .spinner { width: 44px; height: 44px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { font-size: 14px; color: var(--muted); }
+
+  /* TOAST */
+  .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--card); border: 1px solid var(--border); padding: 12px 20px; border-radius: 12px; font-size: 13px; font-weight: 600; opacity: 0; transition: all 0.3s; z-index: 200; max-width: 90vw; text-align: center; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.success { border-color: rgba(16,185,129,0.4); color: var(--accent3); }
+  .toast.error { border-color: rgba(239,68,68,0.4); color: #fca5a5; }
+  .toast.info { border-color: rgba(0,212,255,0.3); color: var(--accent); }
+
+  /* WAVE */
+  .wave-container { display: flex; align-items: center; gap: 3px; height: 24px; }
+  .wave-bar { width: 4px; border-radius: 2px; background: var(--danger); animation: wave 0.8s ease infinite; }
+  .wave-bar:nth-child(1){animation-delay:0s;height:8px} .wave-bar:nth-child(2){animation-delay:.1s;height:16px}
+  .wave-bar:nth-child(3){animation-delay:.2s;height:24px} .wave-bar:nth-child(4){animation-delay:.3s;height:16px}
+  .wave-bar:nth-child(5){animation-delay:.4s;height:8px}
+  @keyframes wave { 0%,100%{transform:scaleY(0.5)} 50%{transform:scaleY(1)} }
+
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <div class="logo">Speak<span>Up</span></div>
+    <div class="streak">🔥 <span id="streakCount">0</span> kalimat</div>
+  </div>
+
+  <!-- HOME -->
+  <div class="screen home-screen active" id="homeScreen">
+    <div class="welcome-text">
+      <h2>Pilih Tema,<br><span>Mulai Belajar</span> 🚀</h2>
+      <p>AI membuat kalimat sesuai tema pilihanmu. Tirukan dengan benar <strong>5 kali</strong> untuk lanjut ke kalimat berikutnya!</p>
+    </div>
+    <div>
+      <div class="section-label">Pilih Tema Belajar</div>
+      <div class="theme-grid" id="themeGrid"></div>
+    </div>
+    <button class="start-btn" id="startBtn" disabled onclick="startLearning()">Pilih Tema Dulu ↑</button>
+  </div>
+
+  <!-- LEARN -->
+  <div class="screen learn-screen" id="learnScreen">
+    <div class="learn-header">
+      <button class="back-btn" onclick="goHome()">←</button>
+      <div class="learn-title">
+        <h3 id="learnThemeName">—</h3>
+        <p id="learnThemeDesc">Belajar dengan AI</p>
+      </div>
+      <div class="sentence-counter" id="sentenceCounter">#1</div>
+    </div>
+
+    <div class="learn-content">
+
+      <div class="sentence-card">
+        <div class="sentence-type type-active" id="sentenceTypeEl">🟢 ACTIVE</div>
+        <div class="english-text" id="englishText">Memuat kalimat...</div>
+        <div class="translation-box">
+          <div class="translation-label">🇮🇩 Terjemahan</div>
+          <div class="translation-text" id="translationText">Memuat terjemahan...</div>
+        </div>
+      </div>
+
+      <div class="audio-controls">
+        <button class="play-btn" id="playBtn" onclick="playAudio()">
+          <span id="playIcon">▶</span><span id="playLabel">Dengarkan</span>
+        </button>
+        <button class="replay-btn" onclick="replayAudio()" title="Putar ulang">🔁</button>
+      </div>
+
+      <!-- REP COUNTER -->
+      <div class="rep-card">
+        <div class="rep-top">
+          <div class="rep-label">Tirukan dengan benar sebanyak:</div>
+          <div class="rep-num" id="repNum">0 / 5</div>
+        </div>
+        <div class="rep-dots" id="repDots">
+          <div class="rep-dot active" id="dot0">1</div>
+          <div class="rep-dot" id="dot1">2</div>
+          <div class="rep-dot" id="dot2">3</div>
+          <div class="rep-dot" id="dot3">4</div>
+          <div class="rep-dot" id="dot4">5</div>
+        </div>
+      </div>
+
+      <!-- RECORD -->
+      <div class="record-section">
+        <div class="record-instruction" id="recordInstruction">
+          <strong>Langkah 1:</strong> Tekan ▶ untuk dengarkan.<br>
+          <strong>Langkah 2:</strong> Tekan 🎤 lalu tirukan kalimat di atas.
+        </div>
+        <button class="record-btn idle" id="recordBtn" onclick="handleRecordTap()">
+          🎤 Tekan &amp; Bicara
+        </button>
+
+        <!-- Manual fallback -->
+        <div class="manual-wrap" id="manualWrap">
+          <textarea class="manual-input" id="manualInput" rows="2" placeholder="Ketik kalimat yang kamu baca (Enter untuk kirim)..."></textarea>
+          <button class="manual-submit-btn" onclick="submitManual()">✓ Periksa Bacaan (Mode Teks)</button>
+        </div>
+
+        <!-- Mic blocked notice -->
+        <div class="mic-notice" id="micNotice">
+          <p>⚠️ <strong>Mikrofon tidak bisa diakses.</strong><br><br>
+          Ini terjadi karena file HTML dibuka langsung dari folder (file://) — Chrome memblokir mikrofon di mode ini.<br><br>
+          <strong>Solusi cepat:</strong> Upload file ini ke <strong>Netlify Drop</strong> (netlify.com/drop) atau <strong>GitHub Pages</strong> secara gratis — lalu buka dari sana.<br><br>
+          Untuk sementara, gunakan <strong>Mode Teks</strong> di atas.</p>
+        </div>
+
+        <div class="result-box" id="resultBox">
+          <div class="result-text" id="resultText"></div>
+          <div class="score-bar">
+            <div class="score-label" id="scoreLabel">0%</div>
+            <div class="score-track"><div class="score-fill" id="scoreFill" style="width:0%"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <button class="next-btn" id="nextBtn" onclick="nextSentence()">
+        🎉 Kalimat Berikutnya →
+      </button>
+
+    </div>
+  </div>
+</div>
+
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <div class="loading-text">AI sedang membuat kalimat...</div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const REQUIRED_REPS = 5;
+const PASS_SCORE    = 75;
+
+const THEMES = [
+  { id:'daily',    emoji:'☀️', name:'Percakapan Sehari-hari', desc:'Greetings, routines, small talk' },
+  { id:'work',     emoji:'💼', name:'Pekerjaan & Karir',      desc:'Office, meetings, emails' },
+  { id:'travel',   emoji:'✈️', name:'Travel & Wisata',        desc:'Airport, hotel, directions' },
+  { id:'health',   emoji:'🏥', name:'Kesehatan',              desc:'Doctor, symptoms, medicine' },
+  { id:'business', emoji:'📊', name:'Bisnis & Manajemen',     desc:'Strategy, finance, leadership' },
+  { id:'tech',     emoji:'💻', name:'Teknologi & IT',         desc:'Software, digital, coding' },
+  { id:'edu',      emoji:'🎓', name:'Pendidikan',             desc:'Campus, studying, research' },
+  { id:'food',     emoji:'🍜', name:'Makanan & Restoran',     desc:'Ordering, cooking, recipes' },
+  { id:'social',   emoji:'🤝', name:'Sosial & Budaya',        desc:'Events, relationships, etiquette' },
+  { id:'finance',  emoji:'💰', name:'Keuangan Pribadi',       desc:'Budget, saving, investing' },
+];
+
+// Local fallback pool — used when API unavailable
+const POOL = [
+  { english:"I need to check my email before the meeting starts.", indonesian:"Saya perlu memeriksa email sebelum rapat dimulai.", type:"active", keyWords:["check","email","meeting"] },
+  { english:"The report was submitted by the team last Friday.", indonesian:"Laporan diserahkan oleh tim pada Jumat lalu.", type:"passive", keyWords:["submitted","report","team"] },
+  { english:"Have you ever attended an international conference before?", indonesian:"Pernahkah kamu menghadiri konferensi internasional sebelumnya?", type:"question", keyWords:["attended","international","conference"] },
+  { english:"She always greets her colleagues with a warm smile.", indonesian:"Dia selalu menyapa rekan-rekannya dengan senyum hangat.", type:"active", keyWords:["greets","colleagues","smile"] },
+  { english:"The new policy was announced by the manager yesterday.", indonesian:"Kebijakan baru diumumkan oleh manajer kemarin.", type:"passive", keyWords:["policy","announced","manager"] },
+  { english:"Could you please explain the process one more time?", indonesian:"Bisakah kamu menjelaskan prosesnya sekali lagi?", type:"question", keyWords:["explain","process","time"] },
+  { english:"I usually prepare my schedule the night before.", indonesian:"Saya biasanya menyiapkan jadwal saya malam sebelumnya.", type:"active", keyWords:["prepare","schedule","night"] },
+  { english:"Was the project completed on time?", indonesian:"Apakah proyek selesai tepat waktu?", type:"question", keyWords:["project","completed","time"] },
+  { english:"The flight was cancelled due to bad weather.", indonesian:"Penerbangan dibatalkan karena cuaca buruk.", type:"passive", keyWords:["flight","cancelled","weather"] },
+  { english:"I save at least twenty percent of my monthly income.", indonesian:"Saya menabung setidaknya dua puluh persen dari pendapatan bulanan saya.", type:"active", keyWords:["save","percent","income"] },
+];
+
+let selectedTheme = null;
+let sentenceCount  = 0;
+let successReps    = 0;
+let isPlaying      = false;
+let isRecording    = false;
+let recognition    = null;
+let currentSentence = null;
+let hasPlayed      = false;
+let micBlocked     = false;
+
+// ── INIT ───────────────────────────────────────────────────
+(function init() {
+  const grid = document.getElementById('themeGrid');
+  THEMES.forEach(t => {
+    const card = document.createElement('div');
+    card.className = 'theme-card';
+    card.innerHTML = `<div class="theme-emoji">${t.emoji}</div><div class="theme-name">${t.name}</div><div class="theme-desc">${t.desc}</div>`;
+    card.onclick = () => selectTheme(t, card);
+    grid.appendChild(card);
+  });
+  document.getElementById('homeScreen').style.display = 'flex';
+  document.getElementById('learnScreen').style.display = 'none';
+})();
+
+// ── NAVIGATION ─────────────────────────────────────────────
+function selectTheme(t, el) {
+  document.querySelectorAll('.theme-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedTheme = t;
+  const btn = document.getElementById('startBtn');
+  btn.disabled = false;
+  btn.textContent = `Mulai Belajar ${t.emoji}`;
+}
+
+function goHome() {
+  stopSpeech();
+  if (isRecording) stopRecord();
+  document.getElementById('homeScreen').style.display = 'flex';
+  document.getElementById('homeScreen').classList.add('active');
+  document.getElementById('learnScreen').style.display = 'none';
+  document.getElementById('learnScreen').classList.remove('active');
+}
+
+function startLearning() {
+  if (!selectedTheme) return;
+  sentenceCount = 0;
+  document.getElementById('streakCount').textContent = '0';
+  document.getElementById('learnThemeName').textContent = selectedTheme.name;
+  document.getElementById('learnThemeDesc').textContent = selectedTheme.desc;
+  document.getElementById('homeScreen').style.display = 'none';
+  document.getElementById('homeScreen').classList.remove('active');
+  document.getElementById('learnScreen').style.display = 'flex';
+  document.getElementById('learnScreen').classList.add('active');
+  fetchNextSentence();
+}
+
+// ── SENTENCE GENERATION ────────────────────────────────────
+async function fetchNextSentence() {
+  showLoading(true);
+  hasPlayed    = false;
+  successReps  = 0;
+  resetRecordUI();
+  renderRepDots();
+  document.getElementById('nextBtn').classList.remove('enabled');
+
+  const typeList = ['active', 'passive', 'question'];
+  const type  = typeList[Math.floor(Math.random() * 3)];
+  const level = sentenceCount < 5 ? 'beginner' : sentenceCount < 15 ? 'intermediate' : 'advanced';
+
+  const prompt = `You are an English learning AI for Indonesian speakers.
+Generate ONE ${type} English sentence. Theme: "${selectedTheme.name} (${selectedTheme.desc})". Level: ${level}.
+Rules: practical vocabulary, natural speech, 8–20 words.
+RESPOND ONLY with this JSON (no markdown, no extra text):
+{"english":"...","indonesian":"terjemahan Indonesia","type":"${type}","keyWords":["w1","w2","w3"]}`;
+
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 250,
+        messages: [{ role: "user", content: prompt }]
+      })
+    });
+    const data   = await res.json();
+    const parsed = JSON.parse(data.content[0].text.trim());
+    currentSentence = parsed;
+    sentenceCount++;
+    renderSentence(parsed);
+  } catch (e) {
+    // Use local pool as fallback
+    const fb = POOL[sentenceCount % POOL.length];
+    currentSentence = { ...fb };
+    sentenceCount++;
+    renderSentence(currentSentence);
+  } finally {
+    showLoading(false);
+  }
+}
+
+function renderSentence(s) {
+  const typeEl = document.getElementById('sentenceTypeEl');
+  if (s.type === 'active')       { typeEl.className = 'sentence-type type-active';   typeEl.innerHTML = '🟢 ACTIVE'; }
+  else if (s.type === 'passive') { typeEl.className = 'sentence-type type-passive';  typeEl.innerHTML = '🟣 PASSIVE'; }
+  else                           { typeEl.className = 'sentence-type type-question'; typeEl.innerHTML = '🟡 QUESTION'; }
+
+  let html = s.english;
+  (s.keyWords || []).forEach(w => {
+    const re = new RegExp(`\\b(${w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})\\b`, 'gi');
+    html = html.replace(re, '<span class="word-highlight">$1</span>');
+  });
+  document.getElementById('englishText').innerHTML = html;
+  document.getElementById('translationText').textContent = s.indonesian;
+  document.getElementById('sentenceCounter').textContent = `#${sentenceCount}`;
+  document.getElementById('streakCount').textContent = sentenceCount - 1;
+
+  document.getElementById('playBtn').className = 'play-btn';
+  document.getElementById('playIcon').textContent = '▶';
+  document.getElementById('playLabel').textContent = 'Dengarkan';
+  document.getElementById('recordInstruction').innerHTML =
+    '<strong>Langkah 1:</strong> Tekan ▶ untuk dengarkan.<br><strong>Langkah 2:</strong> Tekan 🎤 lalu tirukan kalimat di atas.';
+}
+
+// ── REP DOTS ───────────────────────────────────────────────
+function renderRepDots() {
+  document.getElementById('repNum').textContent = `${successReps} / ${REQUIRED_REPS}`;
+  for (let i = 0; i < REQUIRED_REPS; i++) {
+    const dot = document.getElementById('dot' + i);
+    dot.className = 'rep-dot';
+    if (i < successReps)       { dot.classList.add('done');   dot.textContent = '✓'; }
+    else if (i === successReps){ dot.classList.add('active');  dot.textContent = i + 1; }
+    else                       {                               dot.textContent = i + 1; }
+  }
+}
+
+// ── TTS ────────────────────────────────────────────────────
+function playAudio() {
+  if (!currentSentence) return;
+  if (isPlaying) { stopSpeech(); return; }
+  speakText(currentSentence.english, true);
+}
+function replayAudio() {
+  if (!currentSentence) return;
+  stopSpeech();
+  setTimeout(() => speakText(currentSentence.english, false), 100);
+  hasPlayed = true;
+}
+function speakText(text, track) {
+  stopSpeech();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'en-US'; u.rate = 0.85; u.pitch = 1;
+  const vox = window.speechSynthesis.getVoices();
+  const pick = vox.find(v => v.lang === 'en-US' && /google/i.test(v.name))
+            || vox.find(v => v.lang.startsWith('en-US'))
+            || vox.find(v => v.lang.startsWith('en'));
+  if (pick) u.voice = pick;
+  if (track) {
+    isPlaying = true;
+    document.getElementById('playBtn').classList.add('playing');
+    document.getElementById('playIcon').textContent = '⏹';
+    document.getElementById('playLabel').textContent = 'Berhenti';
+  }
+  u.onend = () => {
+    isPlaying = false; hasPlayed = true;
+    document.getElementById('playBtn').classList.remove('playing');
+    document.getElementById('playIcon').textContent = '▶';
+    document.getElementById('playLabel').textContent = 'Dengarkan Lagi';
+  };
+  u.onerror = () => {
+    isPlaying = false;
+    document.getElementById('playBtn').classList.remove('playing');
+    document.getElementById('playIcon').textContent = '▶';
+    document.getElementById('playLabel').textContent = 'Dengarkan';
+  };
+  window.speechSynthesis.speak(u);
+  speechUtterance = u;
+  hasPlayed = true;
+}
+let speechUtterance = null;
+function stopSpeech() { window.speechSynthesis && window.speechSynthesis.cancel(); isPlaying = false; }
+window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+
+// ── RECORD ─────────────────────────────────────────────────
+function handleRecordTap() {
+  if (!hasPlayed) { showToast('Dengarkan kalimat dulu sebelum menirukan 🎧', 'info'); return; }
+  if (micBlocked) { showToast('Gunakan Mode Teks di bawah', 'info'); return; }
+  isRecording ? stopRecord() : startRecord();
+}
+
+function startRecord() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { activateTextFallback(); return; }
+
+  recognition = new SR();
+  recognition.lang            = 'en-US';
+  recognition.interimResults  = false;
+  recognition.maxAlternatives = 5;
+  isRecording = true;
+
+  const btn = document.getElementById('recordBtn');
+  btn.className = 'record-btn recording';
+  btn.innerHTML = `<div class="wave-container">${'<div class="wave-bar"></div>'.repeat(5)}</div> Sedang Merekam...`;
+
+  recognition.onresult = e => {
+    const ts = Array.from({ length: e.results[0].length }, (_, i) => e.results[0][i].transcript);
+    processResult(ts);
+  };
+  recognition.onerror = e => {
+    stopRecord();
+    if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+      activateTextFallback();
+    } else if (e.error === 'no-speech') {
+      showToast('Tidak terdengar suara — coba lagi!', 'info');
+    } else {
+      showToast('Mikrofon error: ' + e.error, 'error');
+    }
+  };
+  recognition.onend = () => { isRecording = false; if (!micBlocked) resetRecordBtn(); };
+
+  try { recognition.start(); }
+  catch(err) { activateTextFallback(); }
+}
+
+function activateTextFallback() {
+  micBlocked = true;
+  isRecording = false;
+  document.getElementById('recordBtn').style.display = 'none';
+  document.getElementById('manualWrap').classList.add('show');
+  document.getElementById('micNotice').classList.add('show');
+  document.getElementById('recordInstruction').innerHTML =
+    '⚠️ <strong>Mikrofon diblokir.</strong> Gunakan <strong>Mode Teks</strong> di bawah — ketik kalimat yang kamu baca.';
+}
+
+function stopRecord() {
+  if (recognition) { try { recognition.stop(); } catch(e){} }
+  isRecording = false;
+  resetRecordBtn();
+}
+function resetRecordBtn() {
+  if (micBlocked) return;
+  const btn = document.getElementById('recordBtn');
+  btn.className = 'record-btn idle';
+  btn.innerHTML = '🎤 Tekan & Bicara';
+}
+
+// ── MANUAL INPUT ───────────────────────────────────────────
+function submitManual() {
+  const val = document.getElementById('manualInput').value.trim();
+  if (!val) { showToast('Ketik kalimatnya dulu!', 'info'); return; }
+  document.getElementById('manualInput').value = '';
+  processResult([val]);
+}
+document.getElementById('manualInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitManual(); }
+});
+
+// ── SCORING ────────────────────────────────────────────────
+function processResult(transcripts) {
+  const target = currentSentence.english.toLowerCase().replace(/[^a-z0-9\s]/g, '');
+  let best = 0, bestT = transcripts[0];
+  transcripts.forEach(t => {
+    const s = calcSim(t.toLowerCase().replace(/[^a-z0-9\s]/g, ''), target);
+    if (s > best) { best = s; bestT = t; }
+  });
+  showResult(bestT, best);
+}
+
+function calcSim(a, b) {
+  const aW = a.split(/\s+/).filter(Boolean);
+  const bW = b.split(/\s+/).filter(Boolean);
+  if (!bW.length) return 0;
+  let m = 0;
+  bW.forEach(bw => { if (aW.some(aw => aw === bw || lev(aw, bw) <= 1)) m++; });
+  return Math.round((m / bW.length) * 100);
+}
+
+function lev(a, b) {
+  const dp = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)]);
+  for (let j = 0; j <= b.length; j++) dp[0][j] = j;
+  for (let i = 1; i <= a.length; i++)
+    for (let j = 1; j <= b.length; j++)
+      dp[i][j] = a[i-1] === b[j-1] ? dp[i-1][j-1] : 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
+  return dp[a.length][b.length];
+}
+
+function showResult(transcript, score) {
+  // Word diff
+  const tWords = currentSentence.english.split(/\s+/);
+  const sWords = transcript.split(/\s+/);
+  let html = '<span style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-weight:700;display:block;margin-bottom:5px;">Yang kamu ucapkan:</span>';
+  sWords.forEach(sw => {
+    const c  = sw.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const ok = tWords.some(tw => { const t = tw.toLowerCase().replace(/[^a-z0-9]/g, ''); return t === c || lev(t, c) <= 1; });
+    html += `<span class="${ok ? 'correct' : 'wrong'}">${sw}</span> `;
+  });
+  document.getElementById('resultText').innerHTML = html;
+  document.getElementById('resultBox').classList.add('show');
+
+  const fill = document.getElementById('scoreFill');
+  fill.style.width      = score + '%';
+  fill.style.background = score >= 80 ? 'var(--accent3)' : score >= 50 ? 'var(--warn)' : 'var(--danger)';
+  document.getElementById('scoreLabel').textContent = score + '%';
+
+  if (score >= PASS_SCORE) {
+    successReps++;
+    renderRepDots();
+
+    if (successReps >= REQUIRED_REPS) {
+      showToast('🏆 5/5 Sempurna! Lanjut!', 'success');
+      document.getElementById('nextBtn').classList.add('enabled');
+      document.getElementById('recordInstruction').innerHTML =
+        `<strong style="color:var(--accent3)">🏆 Selesai! ${REQUIRED_REPS}/${REQUIRED_REPS} pengulangan berhasil.</strong><br>Tekan tombol hijau untuk lanjut ke kalimat berikutnya.`;
+      // Lock input until next
+      if (micBlocked) {
+        document.getElementById('manualWrap').style.opacity = '0.4';
+        document.getElementById('manualWrap').style.pointerEvents = 'none';
+      } else {
+        document.getElementById('recordBtn').disabled = true;
+        document.getElementById('recordBtn').style.opacity = '0.4';
+      }
+    } else {
+      const rem = REQUIRED_REPS - successReps;
+      const stars = ['','⭐','⭐⭐','⭐⭐⭐','⭐⭐⭐⭐'][successReps] || '✅';
+      showToast(`${stars} ${successReps}/${REQUIRED_REPS} — ${rem} lagi!`, 'success');
+      document.getElementById('recordInstruction').innerHTML =
+        `<strong style="color:var(--accent3)">✓ Rep ${successReps}/${REQUIRED_REPS} berhasil!</strong> Masih <strong>${rem} lagi</strong> — tirukan sekali lagi!`;
+    }
+  } else {
+    const hint = score >= 60 ? 'Hampir! Ucapkan lebih jelas.' : score >= 40 ? 'Perhatikan kata yang merah.' : 'Dengarkan sekali lagi, lalu ulangi.';
+    showToast(`${score}% — ${hint}`, 'error');
+    document.getElementById('recordInstruction').innerHTML =
+      `Skor <strong>${score}%</strong> — butuh minimal ${PASS_SCORE}%.<br>${hint}`;
+  }
+}
+
+// ── NEXT ───────────────────────────────────────────────────
+function nextSentence() {
+  stopSpeech();
+  if (isRecording) stopRecord();
+
+  // Reset tombol rekam
+  micBlocked = false;
+  const recBtn = document.getElementById('recordBtn');
+  recBtn.style.display = '';
+  recBtn.disabled = false;
+  recBtn.style.opacity = '1';
+  recBtn.className = 'record-btn idle';
+  recBtn.innerHTML = '🎤 Tekan & Bicara';
+
+  // Reset manual input
+  const mw = document.getElementById('manualWrap');
+  mw.classList.remove('show');
+  mw.style.opacity = '1';
+  mw.style.pointerEvents = 'auto';
+  document.getElementById('manualInput').value = '';
+  document.getElementById('micNotice').classList.remove('show');
+
+  // Reset result & next btn
+  document.getElementById('nextBtn').classList.remove('enabled');
+  document.getElementById('resultBox').classList.remove('show');
+  document.getElementById('resultText').textContent = '';
+  document.getElementById('scoreFill').style.width = '0%';
+  document.getElementById('scoreLabel').textContent = '0%';
+
+  document.querySelector('.learn-content').scrollTo({ top: 0, behavior: 'smooth' });
+  fetchNextSentence();
+}
+
+function resetRecordUI() {
+  document.getElementById('resultBox').classList.remove('show');
+  document.getElementById('resultText').textContent = '';
+  document.getElementById('scoreFill').style.width = '0%';
+  document.getElementById('scoreLabel').textContent = '0%';
+  resetRecordBtn();
+}
+
+// ── HELPERS ────────────────────────────────────────────────
+function showLoading(on) { document.getElementById('loadingOverlay').classList.toggle('show', on); }
+
+let toastTimer;
+function showToast(msg, type = 'info') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast show ${type}`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
+}
+</script>
+</body>
+</html>
